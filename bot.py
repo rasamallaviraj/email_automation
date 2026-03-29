@@ -1,7 +1,8 @@
 from imapclient import IMAPClient
 import pyzmail
 import time
-
+import smtplib
+from email.mime.text import MIMEText
 # 🔐 YOUR DETAILS
 EMAIL = "rasamallaviraj0@gmail.com"
 PASSWORD = "sfcp dplc safo yhwn"
@@ -9,7 +10,29 @@ PASSWORD = "sfcp dplc safo yhwn"
 # ⚙️ SETTINGS
 TRUSTED_SENDERS = ["rasamallaviraj@gmail.com"]
 MAX_EMAILS = 10
+import requests
 
+NEWS_API_KEY = "f91db2a781c04281bb9fbd9f5d94bba2"
+
+def get_news():
+    url = f"https://newsapi.org/v2/everything?q=India&sortBy=publishedAt&apiKey={NEWS_API_KEY}"
+    response = requests.get(url).json()
+
+    articles = response.get("articles", [])[:5]
+
+    news_list = []
+    for a in articles:
+        title = a["title"]
+        desc = a["description"] or ""
+        news_list.append(f"{title} - {desc}")
+
+    return news_list
+
+def summarize_news(news_list):
+    summary = "📰 TODAY'S NEWS:\n\n"
+    for i, news in enumerate(news_list, 1):
+        summary += f"{i}. {news[:100]}...\n\n"
+    return summary
 # 🧠 CLASSIFIER
 def classify(text):
     text = text.lower()
@@ -93,12 +116,30 @@ def run_bot():
             print("-" * 60)
 
         print("\n✅ Cycle completed.\n")
+def run_news_bot():
+    print("\n📰 Fetching News...\n")
 
+    news = get_news()
+    summary = summarize_news(news)
 
+    print(summary)
+
+    send_email(summary)
+def send_email(content):
+    msg = MIMEText(content)
+    msg['Subject'] = "📰 News Update"
+    msg['From'] = EMAIL
+    msg['To'] = EMAIL
+
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+        server.login(EMAIL, PASSWORD)
+        server.send_message(msg)
+
+    print("📩 News Email Sent!")
 # 🔁 AUTO RUN LOOP
 while True:
-    run_bot()
+    run_bot()        # email cleaner
+    run_news_bot()   # news feature
 
     print("⏳ Waiting 1 hour before next check...\n")
     time.sleep(3600)
-    
